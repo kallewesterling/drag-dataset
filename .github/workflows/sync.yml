@@ -2,9 +2,13 @@ name: Sync data
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+  schedule:
+    - cron: '0 0 * * 0'
 
 jobs:
   build:
@@ -13,7 +17,8 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.9]
+        python-version:
+          - 3.9
 
     steps:
     - uses: actions/checkout@v2
