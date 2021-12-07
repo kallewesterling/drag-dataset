@@ -78,11 +78,6 @@ for performer, city in json_data.items():
         print(f'{len(city)} cities registered with no named performers.')
         continue
     print(f'{performer} appeared in {len(city)} cities across the dataset. For instance:', '; '.join(city[:3]))
-
-# +
-# Pandas can be used to plot
 # -
-
-json_data
 
 
