@@ -32,14 +32,12 @@ jobs:
       - name: Synchronize data
         run: |
           python sync-data.py
-      - uses: popsiclestick/gist-sync-action@v1.2.0
-        id: sync
+      - name: Deploy
+        uses: exuanbo/actions-deploy-gist@v1
         with:
-          auth: ${{ secrets.TOKEN }}
-          gist_url: https://gist.github.com/kallewesterling/5979a1a90d705523d343bee40feca509
-          gist_title: Full dataset
-          gist_description: This is the full dataset for my dissertation
-          github_file: data/full.json
+          token: ${{ secrets.TOKEN }}
+          gist_id: 5979a1a90d705523d343bee40feca509
+          file_path: ./data/full.json
       # - name: Commit updates
       #  run: |
       #    git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
