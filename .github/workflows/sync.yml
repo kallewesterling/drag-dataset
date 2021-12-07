@@ -36,6 +36,6 @@ jobs:
         run: |
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add df_clean.json
-          git commit -m "Add changes" -a
+          git add data
+          git commit -m "Add updates to data" -a
           (git push) || true
