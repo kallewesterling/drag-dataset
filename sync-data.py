@@ -18,13 +18,27 @@
 # Imports
 
 import json
+import yaml
 import pandas as pd
 from pathlib import Path
 
 # +
-# Variables
+# Load settings
 
-full_dataset_file = Path('data/full.json') # Name for where to store the full dataset
+with open("settings.yml", "r") as stream:
+    try:
+        settings = yaml.safe_load(stream)
+        full_dataset_file = Path(settings['data-directory'] + '/' + settings['full-dataset'])
+        skip_data = settings['skip-columns']
+        pairings = [(x[0], x[1]) for x in settings['pairings']]
+        
+        print(settings['data-directory'] + '/' + settings['pairings-directory'] + '/')
+        print(settings['data-directory'] + '/' + settings['values-directory'] + '/')
+    except yaml.YAMLError as exc:
+        print(exc)
+
+# +
+# Variables
 
 replace_scheme = { # Replacement strings for utf-encoded data (To be fixed in future versions)
     '\\u2014': '',
@@ -37,37 +51,6 @@ replace_scheme = { # Replacement strings for utf-encoded data (To be fixed in fu
     '\\u00bd': '½',
     '\\u2014': '—'
 }
-
-skip_data = [ # Columns to clear out in clean dataset
-    'Source',
-    'Imported from former archive',
-    'Search (fulton)',
-    'Search (newspapers.com)',
-    'EIMA_Search'
-]
-
-urls = { # URLs - right now, we only use the `live` one
-    "live": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT0E0Y7txIa2pfBuusA1cd8X5OVhQ_D0qZC8D40KhTU3xB7McsPR2kuB7GH6ncmNT3nfjEYGbscOPp0/pub?gid=2042982575&single=true&output=csv"
-}
-
-pairings = [ # Here are the pairings that will be generated. Add to it if you want to create other datafiles.
-    ('Normalized City', 'Normalized performer'),
-    ('Normalized performer', 'Normalized City'),
-    ('Year', 'Normalized City'),
-    ('Unsure whether drag artist', 'Normalized performer'),
-    ('Normalized performer', 'Normalized Venue'),
-    ('Normalized Venue', 'Normalized performer'),
-    ('Source clean', 'Normalized performer'),
-    ('Normalized performer', 'Newspaper_ID'),
-    ('Normalized performer', 'EIMA_ID'),
-    ('Normalized performer', 'Comment on node: performer'),
-    ('Normalized Venue', 'Comment on node: venue'),
-    ('Normalized City', 'Comment on node: city'),
-    ('Normalized Revue Name', 'Comment on edge: revue'),
-    ('Newspaper', 'Normalized performer'),
-    ('Normalized Revue Name', 'Normalized performer'),
-    ('Has image', 'Normalized performer')
-]
 
 # +
 # Set up functions, directories, etc
