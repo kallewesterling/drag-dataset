@@ -37,6 +37,20 @@ with open("settings.yml", "r") as stream:
     except yaml.YAMLError as exc:
         print(exc)
 
+print('######## Settings loaded: ################')
+print()
+for key in settings:
+    if type(settings[key]) == str:
+        print(f"{key}: {settings[key]}")
+        print()
+    elif type(settings[key]) == list:
+        print(f"{key}:")
+        [print(f'- {x}') for x in settings[key]]
+        print()
+    else:
+        print(f"{key}: {settings[key]}")
+print('#########################################')
+
 # +
 # Variables
 
@@ -52,11 +66,9 @@ replace_scheme = { # Replacement strings for utf-encoded data (To be fixed in fu
     '\\u2014': '—'
 }
 
+
 # +
 # Set up functions, directories, etc
-
-if not full_dataset_file.parent.exists():
-    full_dataset_file.parent.mkdir(parents=True)
 
 def fix_cat(cat):
     cat = cat.lower()
@@ -96,6 +108,9 @@ def save_result(cat, result, type):
     
     return True
     
+if not full_dataset_file.parent.exists():
+    full_dataset_file.parent.mkdir(parents=True)
+    
 if not settings['values-directory'].exists():
     settings['values-directory'].mkdir(parents=True)
     
@@ -122,6 +137,7 @@ except FileNotFoundError:
 # Read in data
 
 df = pd.read_csv(settings['urls']['live'])
+print('Dataframe loaded.')
 
 # +
 # Fix `df`
@@ -136,11 +152,15 @@ df = df.astype({
 })
 df.fillna('', inplace=True)
 
+print('Dataframe fixed.')
+
 # +
 # Create clean copy of `df` without columns in `skip_data` and that has `Exclude from viz` checked
 
 df_clean = df.drop(skip_data, axis=1)
 df_clean = df_clean.drop(df_clean[df_clean['Exclude from visualization']==True].index)
+
+print('Clean copy of Dataframe created.')
 
 # +
 # Set up `Year` column
@@ -150,22 +170,28 @@ df_clean['Year'] = df_clean['Year'].fillna(0)
 df_clean = df_clean.astype({"Year": int})
 df_clean['Year'] = df_clean['Year'].replace(0, '')
 
+print('Year column created.')
+
 # +
 # Make json string
 
 json_str = df_clean.to_json(orient="records")
+
+print('Full dataset JSON generated.')
 
 # +
 # Replace wonky characters (TODO: Fix this more elegantly)
 
 for search, replace in replace_scheme.items():
     json_str = json_str.replace(search, replace)
+    
+print('Full dataset JSON fixed.')
 
 # +
 # Write out new data file if it does not match the existing one
 
 if str(json.loads(json_str)) == str(json_str_existing):
-    pass # print('No updated data.')
+    print('No updated data.')
 else:
     full_dataset_file.write_text(json_str)
     print('Updated data written.')
@@ -182,6 +208,8 @@ else:
 df_clean = df_clean.replace('–', '')
 df_clean = df_clean.replace('—', '')
 
+print('Cleaned dataset fixed.')
+
 # +
 # Set up and empty results dict
 
@@ -195,11 +223,15 @@ for column in df_clean.columns:
     d = dict(sorted(d.items()))
     results[column] = d
 
+print('Values generated from cleaned dataset.')
+
 # +
 # Loop through all the results, fix their json-formatted data, and save the individual files
 
 for cat, result in results.items():
     save_result(cat, result, 'values')
+    
+print('All values files saved.')
 # -
 
 
@@ -212,10 +244,15 @@ for cat, result in results.items():
 
 results = {f'{x}-{y}': {} for x, y in pairings}
 
+print('Pairings dictionary created.')
+
 # +
 # Loop through all pairings to generate the keys and values for all of the desired "filters"
 
+print('Creating pairings from cleaned dataset...')
+
 for k, v in pairings:
+    print(f'   ... {k} - {v}')
     values = list(zip(list(df_clean[k]), list(df_clean[v])))
     d = {str(x[0]): [] for x in values}
     for x in values:
@@ -224,12 +261,13 @@ for k, v in pairings:
         d[cat] = sorted(list(set(x for x in d[cat] if x)))
     d = dict(sorted(d.items()))
     results[f'{k}-{v}'] = d
+    
+print('Done.')
 
 # +
 # Loop through all the results, fix their json-formatted data, and save the individual files
 
 for cat, result in results.items():
     save_result(cat, result, 'pairings')
-# -
-
-
+    
+print('All pairings files saved.')
