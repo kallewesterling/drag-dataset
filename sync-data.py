@@ -55,6 +55,18 @@ pairings = [ # Here are the pairings that will be generated. Add to it if you wa
     ('Normalized performer', 'Normalized City'),
     ('Year', 'Normalized City'),
     ('Unsure whether drag artist', 'Normalized performer'),
+    ('Normalized performer', 'Normalized Venue'),
+    ('Normalized Venue', 'Normalized performer'),
+    ('Source clean', 'Normalized performer'),
+    ('Normalized performer', 'Newspaper_ID'),
+    ('Normalized performer', 'EIMA_ID'),
+    ('Normalized performer', 'Comment on node: performer'),
+    ('Normalized Venue', 'Comment on node: venue'),
+    ('Normalized City', 'Comment on node: city'),
+    ('Normalized Revue Name', 'Comment on edge: revue'),
+    ('Newspaper', 'Normalized performer'),
+    ('Normalized Revue Name', 'Normalized performer'),
+    ('Has image', 'Normalized performer')
 ]
 
 # +
@@ -235,3 +247,6 @@ for k, v in pairings:
 
 for cat, result in results.items():
     save_result(cat, result, 'pairings')
+# -
+
+
