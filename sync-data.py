@@ -32,8 +32,8 @@ with open("settings.yml", "r") as stream:
         skip_data = settings['skip-columns']
         pairings = [(x[0], x[1]) for x in settings['pairings']]
         
-        print(settings['data-directory'] + '/' + settings['pairings-directory'] + '/')
-        print(settings['data-directory'] + '/' + settings['values-directory'] + '/')
+        settings['pairings-directory'] = Path(settings['data-directory'] + '/' + settings['pairings-directory'] + '/')
+        settings['values-directory'] = Path(settings['data-directory'] + '/' + settings['values-directory'] + '/')
     except yaml.YAMLError as exc:
         print(exc)
 
@@ -96,11 +96,11 @@ def save_result(cat, result, type):
     
     return True
     
-if not Path('data/values').exists():
-    Path('data/values').mkdir(parents=True)
+if not settings['values-directory'].exists():
+    settings['values-directory'].mkdir(parents=True)
     
-if not Path('data/pairings').exists():
-    Path('data/pairings').mkdir(parents=True)
+if not settings['pairings-directory'].exists():
+    settings['pairings-directory'].mkdir(parents=True)
 
 # +
 # Check for existing data
@@ -121,7 +121,7 @@ except FileNotFoundError:
 # +
 # Read in data
 
-df = pd.read_csv(urls['live'])
+df = pd.read_csv(settings['urls']['live'])
 
 # +
 # Fix `df`
