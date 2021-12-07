@@ -15,14 +15,18 @@
 # ---
 
 # +
+# Imports
+
+import json
 import pandas as pd
 from pathlib import Path
-import json
 
-full_dataset_file = Path('data/full.json')
+# +
+# Variables
 
+full_dataset_file = Path('data/full.json') # Name for where to store the full dataset
 
-replace_scheme = {
+replace_scheme = { # Replacement strings for utf-encoded data (To be fixed in future versions)
     '\\u2014': '',
     '\\u2019': '\'',
     '\\u00a0': ' ',
@@ -34,17 +38,31 @@ replace_scheme = {
     '\\u2014': '—'
 }
 
+skip_data = [ # Columns to clear out in clean dataset
+    'Source',
+    'Imported from former archive',
+    'Search (fulton)',
+    'Search (newspapers.com)',
+    'EIMA_Search'
+]
+
+urls = { # URLs - right now, we only use the `live` one
+    "live": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT0E0Y7txIa2pfBuusA1cd8X5OVhQ_D0qZC8D40KhTU3xB7McsPR2kuB7GH6ncmNT3nfjEYGbscOPp0/pub?gid=2042982575&single=true&output=csv"
+}
+
+pairings = [ # Here are the pairings that will be generated. Add to it if you want to create other datafiles.
+    ('Normalized City', 'Normalized performer'),
+    ('Normalized performer', 'Normalized City'),
+    ('Year', 'Normalized City'),
+    ('Unsure whether drag artist', 'Normalized performer'),
+]
+
+# +
+# Set up functions, directories, etc
+
 if not full_dataset_file.parent.exists():
     full_dataset_file.parent.mkdir(parents=True)
 
-try:
-    json_str_existing = json.loads(full_dataset_file.read_text())
-    pass # print(len(json_str_existing), 'records existing')
-except FileNotFoundError:
-    json_str_existing = []
-    print('No data exists - starting from scratch.')
-    
-    
 def fix_cat(cat):
     cat = cat.lower()
     for search, replace in {
@@ -56,22 +74,63 @@ def fix_cat(cat):
         cat = cat.replace(search, replace)
     return cat
 
+def get_year(row):
+    try:
+        return pd.to_datetime(row.Date).year
+    except:
+        return None
 
+def save_result(cat, result, type):
+    ''' type = "values" / "pairing" '''
+    
+    cat = fix_cat(cat)
+
+    # Replace wonky characters (TODO: Fix this more elegantly)
+    json_str = json.dumps(result)
+    
+    for search, replace in replace_scheme.items():
+        json_str = json_str.replace(search, replace)
+    
+    prohibited = json_str.find('\\u')
+    if prohibited > 0:
+        print('Warning:', prohibited)
+        print(json_str[prohibited-30:prohibited+30])
+
+    # print(f'writing {cat}')
+    Path(f'data/{type}/{cat}.json').write_text(json_str)
+    
+    return True
+    
+if not Path('data/values').exists():
+    Path('data/values').mkdir(parents=True)
+    
+if not Path('data/pairings').exists():
+    Path('data/pairings').mkdir(parents=True)
+
+# +
+# Check for existing data
+
+try:
+    json_str_existing = json.loads(full_dataset_file.read_text())
+    pass # print(len(json_str_existing), 'records existing')
+except FileNotFoundError:
+    json_str_existing = []
+    print('No data exists - starting from scratch.')
 # -
 
-skip_data = [
-    'Source',
-    'Imported from former archive',
-    'Search (fulton)',
-    'Search (newspapers.com)',
-    'EIMA_Search'
-]
 
-urls = {
-    "live": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT0E0Y7txIa2pfBuusA1cd8X5OVhQ_D0qZC8D40KhTU3xB7McsPR2kuB7GH6ncmNT3nfjEYGbscOPp0/pub?gid=2042982575&single=true&output=csv"
-}
+
+# +
+# PART I. MAIN DATASET
+
+# +
+# Read in data
 
 df = pd.read_csv(urls['live'])
+
+# +
+# Fix `df`
+
 df['Alleged age'] = df['Alleged age'].fillna(0)
 df['Assumed birth year'] = df['Assumed birth year'].fillna(0)
 df['EIMA_ID'] = df['EIMA_ID'].fillna(0)
@@ -83,13 +142,22 @@ df = df.astype({
 df.fillna('', inplace=True)
 
 # +
-# Create clean copy
+# Create clean copy of `df` without columns in `skip_data` and that has `Exclude from viz` checked
 
 df_clean = df.drop(skip_data, axis=1)
 df_clean = df_clean.drop(df_clean[df_clean['Exclude from visualization']==True].index)
-# -
 
-# Make JSON
+# +
+# Set up `Year` column
+
+df_clean['Year'] = df_clean.apply(lambda row: get_year(row), axis=1)
+df_clean['Year'] = df_clean['Year'].fillna(0)
+df_clean = df_clean.astype({"Year": int})
+df_clean['Year'] = df_clean['Year'].replace(0, '')
+
+# +
+# Make json string
+
 json_str = df_clean.to_json(orient="records")
 
 # +
@@ -99,40 +167,19 @@ for search, replace in replace_scheme.items():
     json_str = json_str.replace(search, replace)
 
 # +
-# Write if new
+# Write out new data file if it does not match the existing one
 
 if str(json.loads(json_str)) == str(json_str_existing):
     pass # print('No updated data.')
 else:
     full_dataset_file.write_text(json_str)
     print('Updated data written.')
+# -
 
-# +
-# Below is optional: get specific datasets, where data is matched across the rows, etc.
-
-# +
-# Set up directories
-
-if not Path('data/values').exists():
-    Path('data/values').mkdir(parents=True)
-    
-if not Path('data/pairings').exists():
-    Path('data/pairings').mkdir(parents=True)
 
 
 # +
-# Set up `Year` column
-
-def get_year(row):
-    try:
-        return pd.to_datetime(row.Date).year
-    except:
-        return None
-
-df_clean['Year'] = df_clean.apply(lambda row: get_year(row), axis=1)
-df_clean['Year'] = df_clean['Year'].fillna(0)
-df_clean = df_clean.astype({"Year": int})
-df_clean['Year'] = df_clean['Year'].replace(0, '')
+# PART II. VALUES DATASET
 
 # +
 # Replace all the null values
@@ -141,17 +188,39 @@ df_clean = df_clean.replace('–', '')
 df_clean = df_clean.replace('—', '')
 
 # +
-in_out = [
-    ('Normalized City', 'Normalized performer'),
-    ('Normalized performer', 'Normalized City'),
-    ('Year', 'Normalized City'),
-    ('Unsure whether drag artist', 'Normalized performer'),
-]
+# Set up and empty results dict
 
-results = {f'{x}-{y}': {} for x, y in in_out}
+results = {}
 
-for ix, vals in enumerate(in_out):
-    k, v = vals
+# +
+# Loop through all the columns to generate the `value_counts` for them
+
+for column in df_clean.columns:
+    d = {str(k): v for k, v in df_clean[column].value_counts().iteritems()}
+    d = dict(sorted(d.items()))
+    results[column] = d
+
+# +
+# Loop through all the results, fix their json-formatted data, and save the individual files
+
+for cat, result in results.items():
+    save_result(cat, result, 'values')
+# -
+
+
+
+# +
+# PART III. PAIRINGS DATASET
+
+# +
+# Set up pairings `results` variable
+
+results = {f'{x}-{y}': {} for x, y in pairings}
+
+# +
+# Loop through all pairings to generate the keys and values for all of the desired "filters"
+
+for k, v in pairings:
     values = list(zip(list(df_clean[k]), list(df_clean[v])))
     d = {str(x[0]): [] for x in values}
     for x in values:
@@ -160,54 +229,9 @@ for ix, vals in enumerate(in_out):
         d[cat] = sorted(list(set(x for x in d[cat] if x)))
     d = dict(sorted(d.items()))
     results[f'{k}-{v}'] = d
-# -
-
-for cat, result in results.items():
-    cat = fix_cat(cat)
-
-    # Replace wonky characters (TODO: Fix this more elegantly)
-    json_str = json.dumps(result)
-    
-    for search, replace in replace_scheme.items():
-        json_str = json_str.replace(search, replace)
-    
-    prohibited = json_str.find('\\u')
-    if prohibited > 0:
-        print('Warning:', prohibited)
-        print(json_str[prohibited-30:prohibited+30])
-
-    # print(f'writing {cat}')
-    Path(f'data/pairings/{cat}.json').write_text(json_str)
 
 # +
-results = {}
-
-for column in df_clean.columns:
-    # print(column, list(set(x for x in df_clean[column] if x))[:10])
-    d = {str(k): v for k, v in df_clean[column].value_counts().iteritems()}
-    d = dict(sorted(d.items()))
-    results[column] = d
-# -
+# Loop through all the results, fix their json-formatted data, and save the individual files
 
 for cat, result in results.items():
-    cat = fix_cat(cat)
-
-    # Replace wonky characters (TODO: Fix this more elegantly)
-    json_str = json.dumps(result)
-
-    for search, replace in replace_scheme.items():
-        json_str = json_str.replace(search, replace)
-
-    prohibited = json_str.find('\\u')
-    if prohibited > 0:
-        print('Warning:', prohibited)
-        print(json_str[prohibited-30:prohibited+30])
-
-    # print(f'writing {cat}')
-    Path(f'data/values/{cat}.json').write_text(json_str)
-
-
-
-
-
-
+    save_result(cat, result, 'pairings')
