@@ -32,6 +32,14 @@ jobs:
       - name: Synchronize data
         run: |
           python sync-data.py
+      - uses: actions/checkout@v2
+      - name: Deploy
+        uses: exuanbo/actions-deploy-gist@v1
+        with:
+          token: ${{ secrets.TOKEN }}
+          gist_id: 5979a1a90d705523d343bee40feca509
+          gist_file_name: full-drag-dataset.json
+          file_path: ./data/full.json
       - name: Commit updates
         run: |
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
