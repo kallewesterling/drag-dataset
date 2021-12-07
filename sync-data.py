@@ -66,6 +66,8 @@ replace_scheme = { # Replacement strings for utf-encoded data (To be fixed in fu
     '\\u2014': '—'
 }
 
+files_written = []
+
 
 # +
 # Set up functions, directories, etc
@@ -81,11 +83,13 @@ def fix_cat(cat):
         cat = cat.replace(search, replace)
     return cat
 
+
 def get_year(row):
     try:
         return pd.to_datetime(row.Date).year
     except:
         return None
+
 
 def save_result(cat, result, type):
     ''' type = "values" / "pairing" '''
@@ -106,7 +110,8 @@ def save_result(cat, result, type):
     # print(f'writing {cat}')
     Path(f'data/{type}/{cat}.json').write_text(json_str)
     
-    return True
+    return Path(f'data/{type}/{cat}.json')
+
     
 if not full_dataset_file.parent.exists():
     full_dataset_file.parent.mkdir(parents=True)
@@ -195,6 +200,11 @@ if str(json.loads(json_str)) == str(json_str_existing):
 else:
     full_dataset_file.write_text(json_str)
     print('Updated data written.')
+
+# +
+# Add written filepath to `files_written`
+
+files_written.append(str(full_dataset_file.absolute()))
 # -
 
 
@@ -229,7 +239,10 @@ print('Values generated from cleaned dataset.')
 # Loop through all the results, fix their json-formatted data, and save the individual files
 
 for cat, result in results.items():
-    save_result(cat, result, 'values')
+    fp = save_result(cat, result, 'values')
+    
+    # Add written filepath to `files_written`
+    files_written.append(str(fp.absolute()))
     
 print('All values files saved.')
 # -
@@ -268,6 +281,24 @@ print('Done.')
 # Loop through all the results, fix their json-formatted data, and save the individual files
 
 for cat, result in results.items():
-    save_result(cat, result, 'pairings')
-    
+    fp = save_result(cat, result, 'pairings')
+
+    # Add written filepath to `files_written`
+    files_written.append(str(fp.absolute()))
+
 print('All pairings files saved.')
+# -
+
+
+
+print()
+print('*************')
+print()
+print('Files written:')
+print()
+for file in files_written:
+    print('-' + file)
+print()
+print('*************')
+
+
