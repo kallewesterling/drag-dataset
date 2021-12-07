@@ -189,6 +189,8 @@ cities.extend([x for x in df['Normalized City'] if not x=='—'])
 cities = list(set([x.replace('?', '') for x in cities]))
 cities = {city: get_geodata(city) for city in cities if city and city != 'Kursaal, Geneva'}
 
+print('Dataframe fixed (geodata).')
+
 
 # +
 def get_geo(row, type):
