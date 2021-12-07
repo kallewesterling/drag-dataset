@@ -32,7 +32,6 @@ jobs:
       - name: Synchronize data
         run: |
           python sync-data.py
-      - uses: actions/checkout@v2
       - uses: popsiclestick/gist-sync-action@v1.2.0
         id: sync
         with:
