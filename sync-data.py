@@ -21,6 +21,7 @@ import json
 import yaml
 import pandas as pd
 from pathlib import Path
+from geopy.geocoders import Nominatim
 
 # +
 # Load settings
@@ -68,6 +69,9 @@ replace_scheme = { # Replacement strings for utf-encoded data (To be fixed in fu
 
 files_written = []
 
+geo_cache = Path('geo-cache.json')
+geolocator = Nominatim(user_agent='drag-dissertation')
+
 
 # +
 # Set up functions, directories, etc
@@ -113,6 +117,24 @@ def save_result(cat, result, type):
     return Path(f'data/{type}/{cat}.json')
 
     
+def get_geodata(city):
+    if geo_cache.exists():
+        geo_data = json.loads(geo_cache.read_text())
+    else:
+        geo_data = {}
+    
+    if not city in geo_data:
+        print(f'geocoding {city}')
+        d = geolocator.geocode(city)
+        if not d:
+            print(f'ERROR: Could not geocode {city}')
+            return {}
+        geo_data[city] = {'box': d.raw.get('boundingbox'), 'lat': d.raw.get('lat'), 'lon': d.raw.get('lon')}
+        geo_cache.write_text(json.dumps(geo_data))
+        
+    return geo_data[city]
+
+
 if not full_dataset_file.parent.exists():
     full_dataset_file.parent.mkdir(parents=True)
     
@@ -158,6 +180,38 @@ df = df.astype({
 df.fillna('', inplace=True)
 
 print('Dataframe fixed.')
+
+# +
+# Geo data
+
+cities = [x for x in df.City if not x=='—']
+cities.extend([x for x in df['Normalized City'] if not x=='—'])
+cities = list(set([x.replace('?', '') for x in cities]))
+cities = {city: get_geodata(city) for city in cities if city and city != 'Kursaal, Geneva'}
+
+
+# +
+def get_geo(row, type):
+    if 'norm-' in type:
+        city = row['Normalized City']
+    else:
+        city = row.City
+    
+    city = city.replace('?', '')
+    
+    if city == '—' or city == '' or city == 'Kursaal, Geneva':
+        return None
+    
+    type = type.replace('norm-', '')
+    
+    return get_geodata(city).get(type)
+
+df['lat'] = df.apply(lambda row: get_geo(row, 'lat'), axis=1)
+df['lon'] = df.apply(lambda row: get_geo(row, 'lon'), axis=1)
+df['box'] = df.apply(lambda row: get_geo(row, 'box'), axis=1)
+df['norm-lat'] = df.apply(lambda row: get_geo(row, 'norm-lat'), axis=1)
+df['norm-lon'] = df.apply(lambda row: get_geo(row, 'norm-lon'), axis=1)
+df['norm-box'] = df.apply(lambda row: get_geo(row, 'norm-box'), axis=1)
 
 # +
 # Create clean copy of `df` without columns in `skip_data` and that has `Exclude from viz` checked
@@ -300,5 +354,7 @@ for file in files_written:
     print('-' + file)
 print()
 print('*************')
+
+
 
 
