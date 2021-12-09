@@ -69,8 +69,8 @@ if debug:
     log("#########################################", padding_y=True)
 
 
-def save_result(cat, result, type):
-    '''type = "values" / "pairing"'''
+def save_result(cat, result, kind):
+    '''kind = "values" / "pairing"'''
 
     def fix_cat(cat):
         cat = cat.lower()
@@ -96,12 +96,12 @@ def save_result(cat, result, type):
 
     # print(f'writing {cat}')
 
-    if not Path(f"data/{type}/{cat}.json").parent.exists():
-        Path(f"data/{type}/{cat}.json").parent.mkdir(parents=True)
+    if not Path(f"data/{kind}/{cat}.json").parent.exists():
+        Path(f"data/{kind}/{cat}.json").parent.mkdir(parents=True)
 
-    Path(f"data/{type}/{cat}.json").write_text(json_str)
+    Path(f"data/{kind}/{cat}.json").write_text(json_str)
 
-    return Path(f"data/{type}/{cat}.json")
+    return Path(f"data/{kind}/{cat}.json")
 
 
 # Ensure main directories exist
