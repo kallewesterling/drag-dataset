@@ -80,9 +80,12 @@ def save_result(cat, result, type):
 
     cat = fix_cat(cat)
 
-    # Replace wonky characters (TODO: Fix this more elegantly)
-    json_str = json.dumps(result)
+    if type(result) == dict:
+        json_str = json.dumps(result)
+    else:
+        json_str = result
 
+    # Replace wonky characters (TODO: Fix this more elegantly)
     for search, replace in replace_scheme.items():
         json_str = json_str.replace(search, replace)
 
