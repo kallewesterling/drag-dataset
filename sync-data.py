@@ -299,9 +299,17 @@ for cat, result in results.items():
     
     # Add written filepath to `files_written`
     files_written.append(str(fp.absolute()))
-    
-print('All values files saved.')
+# +
+# Save all pairings
+
+fp = save_result('full', results, 'values')
+
+# Add written filepath to `files_written`
+files_written.append(str(fp.absolute()))
 # -
+
+print('All values files saved.')
+
 
 
 
@@ -341,11 +349,17 @@ for cat, result in results.items():
 
     # Add written filepath to `files_written`
     files_written.append(str(fp.absolute()))
+# +
+# Save all pairings
 
-print('All pairings files saved.')
+fp = save_result('full', results, 'pairings')
+
+# Add written filepath to `files_written`
+files_written.append(str(fp.absolute()))
 # -
 
 
+print('All pairings files saved.')
 
 print()
 print('*************')
@@ -356,7 +370,3 @@ for file in files_written:
     print('-' + file)
 print()
 print('*************')
-
-
-
-
