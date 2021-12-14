@@ -74,13 +74,13 @@ jobs:
           gist_id: 6f52cb9adfb7d503dabdbf14a2b49247
           gist_file_name: full-network-dataset.json
           file_path: ./data/network/full.json
-      - name: Deploy ego network dataset
-        uses: exuanbo/actions-deploy-gist@v1
-        with:
-          token: ${{ secrets.TOKEN }}
-          gist_id: 2b3d520976e5e251b75db09b4b13ad48
-          gist_file_name: ego-networks-14-days-no-unnamed.json
-          file_path: ./data/network/live/ego-networks-14-days-no-unnamed.json
+      # - name: Deploy ego network dataset
+      #  uses: exuanbo/actions-deploy-gist@v1
+      #  with:
+      #    token: ${{ secrets.TOKEN }}
+      #    gist_id: 2b3d520976e5e251b75db09b4b13ad48
+      #    gist_file_name: ego-networks-14-days-no-unnamed.json
+      #    file_path: ./data/network/live/ego-networks-14-days-no-unnamed.json
       - name: Deploy 3-day network dataset
         uses: exuanbo/actions-deploy-gist@v1
         with:
