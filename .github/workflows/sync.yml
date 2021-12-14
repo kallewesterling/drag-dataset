@@ -25,6 +25,20 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Deploy EIMA clippings
+        uses: exuanbo/actions-deploy-gist@v1
+        with:
+          token: ${{ secrets.TOKEN }}
+          gist_id: df6bc187b76e128d310733c614c1c968
+          gist_file_name: eima_clippings.json
+          file_path: ./data/eima_clippings.json
+      - name: Deploy Newspapers.com clippings
+        uses: exuanbo/actions-deploy-gist@v1
+        with:
+          token: ${{ secrets.TOKEN }}
+          gist_id: 451bc78066ac6f191e9e1c4421163587
+          gist_file_name: newspapers.com_clippings.json
+          file_path: ./data/newspapers.com_clippings.json
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -81,20 +95,6 @@ jobs:
           gist_id: fd3d7baa63410db5ed73d25b2f0d8086
           gist_file_name: live-co-occurrence-grouped-by-14-days-no-unnamed-performers.json
           file_path: ./data/network/live/live-co-occurrence-grouped-by-14-days-no-unnamed-performers.json
-      - name: Deploy EIMA clippings
-        uses: exuanbo/actions-deploy-gist@v1
-        with:
-          token: ${{ secrets.TOKEN }}
-          gist_id: df6bc187b76e128d310733c614c1c968
-          gist_file_name: eima_clippings.json
-          file_path: ./data/eima_clippings.json
-      - name: Deploy Newspapers.com clippings
-        uses: exuanbo/actions-deploy-gist@v1
-        with:
-          token: ${{ secrets.TOKEN }}
-          gist_id: 451bc78066ac6f191e9e1c4421163587
-          gist_file_name: newspapers.com_clippings.json
-          file_path: ./data/newspapers.com_clippings.json
 
       # - name: Commit updates
       #  run: |
