@@ -74,7 +74,7 @@ jobs:
           gist_id: 6f52cb9adfb7d503dabdbf14a2b49247
           gist_file_name: full-network-dataset.json
           file_path: ./data/network/full.json
-      # - name: Deploy ego network dataset
+      # - name: Deploy ego network dataset -- too big currently
       #  uses: exuanbo/actions-deploy-gist@v1
       #  with:
       #    token: ${{ secrets.TOKEN }}
