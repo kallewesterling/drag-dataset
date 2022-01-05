@@ -67,6 +67,9 @@ def clean_data(df, drop_cols=[], verbose=True, forbidden=["?", "[", "]"]):
 
     def get_unique_venue(row, null_value=""):
         """(internal) for use with DataFrame lambda function to return the cleaned-up version of a venue's name (in an order of priority)"""
+        if row["Normalized Venue"] and row["City"]:
+            return row["Normalized Venue"] + " (" + row["City"] + ")"
+
         if row["Venue"] and row["City"]:
             return row["Venue"] + " (" + row["City"] + ")"
 
