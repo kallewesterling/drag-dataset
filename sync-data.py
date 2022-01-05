@@ -20,6 +20,7 @@
 import pandas as pd
 from geopy.geocoders import Nominatim
 from utils import *
+
 # -
 
 T = Timer()
@@ -27,10 +28,8 @@ T = Timer()
 # +
 files_written = []
 
-geo_cache = Path('geo-cache.json')
-geolocator = Nominatim(user_agent='drag-dissertation')
-# -
-
+geo_cache = Path("geo-cache.json")
+geolocator = Nominatim(user_agent="drag-dissertation")
 
 
 # +
@@ -38,12 +37,10 @@ geolocator = Nominatim(user_agent='drag-dissertation')
 
 try:
     json_str_existing = json.loads(full_dataset_file.read_text())
-    pass # log(len(json_str_existing), 'records existing')
+    pass  # log(len(json_str_existing), 'records existing')
 except FileNotFoundError:
     json_str_existing = []
-    log('No data exists - starting from scratch.', padding_bottom=True)
-# -
-
+    log("No data exists - starting from scratch.", padding_bottom=True)
 
 
 # +
@@ -52,88 +49,104 @@ except FileNotFoundError:
 # +
 # Read in data
 
-df = pd.read_csv(settings['urls']['live'])
-log('Dataframe loaded.', padding_bottom=True)
+df = pd.read_csv(settings["urls"]["live"])
+log("Dataframe loaded.", padding_bottom=True)
 
 # +
 # Fix `df`
 
-df['Alleged age'] = df['Alleged age'].fillna(0)
-df['Assumed birth year'] = df['Assumed birth year'].fillna(0)
-df['EIMA_ID'] = df['EIMA_ID'].fillna(0)
-df = df.astype({
-    "Alleged age": int,
-    "Assumed birth year": int,
-    "EIMA_ID": int,
-})
-df.fillna('', inplace=True)
+df["Alleged age"] = df["Alleged age"].fillna(0)
+df["Assumed birth year"] = df["Assumed birth year"].fillna(0)
+df["EIMA_ID"] = df["EIMA_ID"].fillna(0)
+df = df.astype(
+    {
+        "Alleged age": int,
+        "Assumed birth year": int,
+        "EIMA_ID": int,
+    }
+)
+df.fillna("", inplace=True)
 
-log('Dataframe fixed.', padding_bottom=True)
+log("Dataframe fixed.", padding_bottom=True)
 
 
 # +
 # Geo data
 
+
 def get_geodata(city):
+    if city == "Bethlehem, PA":
+        city = "Bethlehem, PA, USA"
+
     if geo_cache.exists():
         geo_data = json.loads(geo_cache.read_text())
     else:
         geo_data = {}
-    
+
     if not city in geo_data:
-        log(f'geocoding {city}')
+        log(f"geocoding {city}")
+
         d = geolocator.geocode(city)
         if not d:
-            log(f'ERROR: Could not geocode {city}')
+            log(f"ERROR: Could not geocode {city}")
             return {}
-        geo_data[city] = {'box': d.raw.get('boundingbox'), 'lat': d.raw.get('lat'), 'lon': d.raw.get('lon')}
+        geo_data[city] = {
+            "box": d.raw.get("boundingbox"),
+            "lat": d.raw.get("lat"),
+            "lon": d.raw.get("lon"),
+        }
         geo_cache.write_text(json.dumps(geo_data))
-        
+
     return geo_data[city]
 
 
-cities = [x for x in df.City if not x=='—']
-cities.extend([x for x in df['Normalized City'] if not x=='—'])
-cities = list(set([x.replace('?', '') for x in cities]))
-cities = {city: get_geodata(city) for city in cities if city and city != 'Kursaal, Geneva'}
+cities = [x for x in df.City if not x == "—"]
+cities.extend([x for x in df["Normalized City"] if not x == "—"])
+cities = list(set([x.replace("?", "") for x in cities]))
+cities = {
+    city: get_geodata(city) for city in cities if city and city != "Kursaal, Geneva"
+}
 
-log('Dataframe fixed (geodata).', padding_bottom=True)
+log("Data generated (geodata).", padding_bottom=True)
 
 
 # +
 def get_geo(row, type):
-    if 'norm-' in type:
-        city = row['Normalized City']
+    if "norm-" in type:
+        city = row["Normalized City"]
     else:
         city = row.City
-    
-    city = city.replace('?', '')
-    
-    if city == '—' or city == '' or city == 'Kursaal, Geneva':
+
+    city = city.replace("?", "")
+
+    if city == "—" or city == "" or city == "Kursaal, Geneva":
         return None
-    
-    type = type.replace('norm-', '')
-    
+
+    type = type.replace("norm-", "")
+
     return get_geodata(city).get(type)
 
-df['lat'] = df.apply(lambda row: get_geo(row, 'lat'), axis=1)
-df['lon'] = df.apply(lambda row: get_geo(row, 'lon'), axis=1)
-df['box'] = df.apply(lambda row: get_geo(row, 'box'), axis=1)
-df['norm-lat'] = df.apply(lambda row: get_geo(row, 'norm-lat'), axis=1)
-df['norm-lon'] = df.apply(lambda row: get_geo(row, 'norm-lon'), axis=1)
-df['norm-box'] = df.apply(lambda row: get_geo(row, 'norm-box'), axis=1)
+
+df["lat"] = df.apply(lambda row: get_geo(row, "lat"), axis=1)
+df["lon"] = df.apply(lambda row: get_geo(row, "lon"), axis=1)
+df["box"] = df.apply(lambda row: get_geo(row, "box"), axis=1)
+df["norm-lat"] = df.apply(lambda row: get_geo(row, "norm-lat"), axis=1)
+df["norm-lon"] = df.apply(lambda row: get_geo(row, "norm-lon"), axis=1)
+df["norm-box"] = df.apply(lambda row: get_geo(row, "norm-box"), axis=1)
 
 # +
 # Create clean copy of `df` without columns in `skip_data` and that has `Exclude from viz` checked
 
 df_clean = df.drop(skip_data, axis=1)
-df_clean = df_clean.drop(df_clean[df_clean['Exclude from visualization']==True].index)
+df_clean = df_clean.drop(df_clean[df_clean["Exclude from visualization"] == True].index)
 
-log('Clean copy of Dataframe created.', padding_bottom=True)
+log("Clean copy of Dataframe created.", padding_bottom=True)
+# -
 
 
 # +
 # Set up `Year` column
+
 
 def get_year(row):
     try:
@@ -142,43 +155,41 @@ def get_year(row):
         return None
 
 
-df_clean['Year'] = df_clean.apply(lambda row: get_year(row), axis=1)
-df_clean['Year'] = df_clean['Year'].fillna(0)
+df_clean["Year"] = df_clean.apply(lambda row: get_year(row), axis=1)
+df_clean["Year"] = df_clean["Year"].fillna(0)
 df_clean = df_clean.astype({"Year": int})
-df_clean['Year'] = df_clean['Year'].replace(0, '')
+df_clean["Year"] = df_clean["Year"].replace(0, "")
 
-log('Year column created.', padding_bottom=True)
+log("Year column created.", padding_bottom=True)
 
 # +
 # Make json string
 
 json_str = df_clean.to_json(orient="records")
 
-log('Full dataset JSON generated.', padding_bottom=True)
+log("Full dataset JSON generated.", padding_bottom=True)
 
 # +
 # Replace wonky characters (TODO: Fix this more elegantly)
 
 for search, replace in replace_scheme.items():
     json_str = json_str.replace(search, replace)
-    
-log('Full dataset JSON fixed.', padding_bottom=True)
+
+log("Full dataset JSON fixed.", padding_bottom=True)
 
 # +
 # Write out new data file if it does not match the existing one
 
 if str(json.loads(json_str)) == str(json_str_existing):
-    log('No updated data.', padding_bottom=True)
+    log("No updated data.", padding_bottom=True)
 else:
     full_dataset_file.write_text(json_str)
-    log('Updated data written.', padding_bottom=True)
+    log("Updated data written.", padding_bottom=True)
 
 # +
 # Add written filepath to `files_written`
 
 files_written.append(str(full_dataset_file.absolute()))
-# -
-
 
 
 # +
@@ -187,10 +198,10 @@ files_written.append(str(full_dataset_file.absolute()))
 # +
 # Replace all the null values
 
-df_clean = df_clean.replace('–', '')
-df_clean = df_clean.replace('—', '')
+df_clean = df_clean.replace("–", "")
+df_clean = df_clean.replace("—", "")
 
-log('Cleaned dataset fixed.', padding_bottom=True)
+log("Cleaned dataset fixed.", padding_bottom=True)
 
 # +
 # Set up and empty results dict
@@ -205,28 +216,26 @@ for column in df_clean.columns:
     d = dict(sorted(d.items()))
     results[column] = d
 
-log('Values generated from cleaned dataset.', padding_bottom=True)
+log("Values generated from cleaned dataset.", padding_bottom=True)
 
 # +
 # Loop through all the results, fix their json-formatted data, and save the individual files
 
 for cat, result in results.items():
-    fp = save_result(cat, result, 'values')
-    
+    fp = save_result(cat, result, "values")
+
     # Add written filepath to `files_written`
     files_written.append(str(fp.absolute()))
 # +
 # Save all pairings
 
-fp = save_result('full', results, 'values')
+fp = save_result("full", results, "values")
 
 # Add written filepath to `files_written`
 files_written.append(str(fp.absolute()))
 # -
 
-log('All values files saved.', padding_bottom=True)
-
-
+log("All values files saved.", padding_bottom=True)
 
 
 # +
@@ -235,18 +244,18 @@ log('All values files saved.', padding_bottom=True)
 # +
 # Set up pairings `results` variable
 
-results = {f'{x}-{y}': {} for x, y in pairings}
+results = {f"{x}-{y}": {} for x, y in pairings}
 
-log('Pairings dictionary created.', padding_bottom=True)
+log("Pairings dictionary created.", padding_bottom=True)
 
 # +
 # Loop through all pairings to generate the keys and values for all of the desired "filters"
 
-log('Creating pairings from cleaned dataset...')
+log("Creating pairings from cleaned dataset...")
 t = Timer()
 
 for k, v in pairings:
-    log(f'   ... {k} - {v}')
+    log(f"   ... {k} - {v}")
     values = list(zip(list(df_clean[k]), list(df_clean[v])))
     d = {str(x[0]): [] for x in values}
     for x in values:
@@ -254,34 +263,27 @@ for k, v in pairings:
         d[cat].append(x[1])
         d[cat] = sorted(list(set(x for x in d[cat] if x)))
     d = dict(sorted(d.items()))
-    results[f'{k}-{v}'] = d
-    
-log(f'Done. ({t.now}s)', padding_bottom=True)
+    results[f"{k}-{v}"] = d
+
+log(f"Done. ({t.now}s)", padding_bottom=True)
 
 # +
 # Loop through all the results, fix their json-formatted data, and save the individual files
 
 for cat, result in results.items():
-    fp = save_result(cat, result, 'pairings')
+    fp = save_result(cat, result, "pairings")
 
     # Add written filepath to `files_written`
     files_written.append(str(fp.absolute()))
 # +
 # Save all pairings
 
-fp = save_result('full', results, 'pairings')
+fp = save_result("full", results, "pairings")
 
 # Add written filepath to `files_written`
 files_written.append(str(fp.absolute()))
 
-log('All pairings files saved.', padding_bottom=True)
-# -
-
-
-
-
-
-
+log("All pairings files saved.", padding_bottom=True)
 
 
 # +
@@ -290,7 +292,7 @@ log('All pairings files saved.', padding_bottom=True)
 import community as community_louvain
 import networkx as nx
 from utils.network import *
-from utils import * # double up - not necessary
+from utils import *  # double up - not necessary
 
 # +
 # Set up clean DataFrame for purposes of network data
@@ -298,7 +300,7 @@ from utils import * # double up - not necessary
 df = get_clean_network_data(
     min_date=datetime.datetime(year=1930, month=1, day=1),
     max_date=datetime.datetime(year=1940, month=12, day=31),
-    verbose=False
+    verbose=False,
 )
 
 # +
@@ -306,21 +308,17 @@ df = get_clean_network_data(
 
 json_str = df.to_json(orient="records")
 
-log('Full network dataset JSON generated.', padding_bottom=True)
+log("Full network dataset JSON generated.", padding_bottom=True)
 
 # +
 # Write out new data file - TODO: if it does not match the existing one
 
-fp = save_result('full', json_str, 'network')
+fp = save_result("full", json_str, "network")
 
 # Add written filepath to `files_written`
 files_written.append(str(fp.absolute()))
 
-log('Updated full network data written.', padding_bottom=True)
-# -
-
-
-
+log("Updated full network data written.", padding_bottom=True)
 
 
 # +
@@ -332,25 +330,23 @@ group_data_dict = get_group_data(df)
 group_data_json = json.dumps(group_data_dict)
 
 # +
-fp = save_result('group-data', group_data_json, 'network')
+fp = save_result("group-data", group_data_json, "network")
 
 # Add written filepath to `files_written`
 files_written.append(str(fp.absolute()))
 
-log('Updated group data written.', padding_bottom=True)
-# -
-
+log("Updated group data written.", padding_bottom=True)
 
 
 # +
 # # ?????
 
-log(f'Creating grouped networks...')
+log(f"Creating grouped networks...")
 networks = {}
 
 for venue, data in group_data_dict.items():
     for grouped_by, data2 in data.items():
-        
+
         # If network does not exist, add them
         if not grouped_by in networks:
             networks[grouped_by] = nx.Graph()
@@ -359,7 +355,7 @@ for venue, data in group_data_dict.items():
         for date_group_id, data3 in data2.items():
             if not len(data3["performers"]) > 1:
                 continue
-            
+
             performers = data3["performers"]
             dates = data3["dates"]
             revues = data3["revues"]
@@ -369,29 +365,40 @@ for venue, data in group_data_dict.items():
                     edge = (performer, target)
                     if not edge in networks[grouped_by].edges:
                         networks[grouped_by].add_edges_from([edge], coLocated={})
-                    if (not venue in networks[grouped_by].edges[edge]["coLocated"]):
+                    if not venue in networks[grouped_by].edges[edge]["coLocated"]:
                         networks[grouped_by].edges[edge]["coLocated"][venue] = []
-                    if (not dates in networks[grouped_by].edges[edge]["coLocated"][venue]):
-                        networks[grouped_by].edges[edge]["coLocated"][venue].append(dates)
+                    if (
+                        not dates
+                        in networks[grouped_by].edges[edge]["coLocated"][venue]
+                    ):
+                        networks[grouped_by].edges[edge]["coLocated"][venue].append(
+                            dates
+                        )
 
                     if not "revues" in networks[grouped_by].edges[edge]:
                         networks[grouped_by].edges[edge]["revues"] = []
                     if not revues in networks[grouped_by].edges[edge]["revues"]:
                         networks[grouped_by].edges[edge]["revues"].extend(revues)
-                        networks[grouped_by].edges[edge]["revues"] = list(set(networks[grouped_by].edges[edge]["revues"]))
+                        networks[grouped_by].edges[edge]["revues"] = list(
+                            set(networks[grouped_by].edges[edge]["revues"])
+                        )
 
                     if not "cities" in networks[grouped_by].edges[edge]:
                         networks[grouped_by].edges[edge]["cities"] = []
                     if not cities in networks[grouped_by].edges[edge]["cities"]:
                         networks[grouped_by].edges[edge]["cities"].extend(cities)
-                        networks[grouped_by].edges[edge]["cities"] = list(set(networks[grouped_by].edges[edge]["cities"]))
+                        networks[grouped_by].edges[edge]["cities"] = list(
+                            set(networks[grouped_by].edges[edge]["cities"])
+                        )
 
-log(f'Grouped network data created (total of {len(networks.keys())} networks)', padding_bottom=True)
+log(
+    f"Grouped network data created (total of {len(networks.keys())} networks)",
+    padding_bottom=True,
+)
 # -
 
 
-
-
+df
 
 # +
 # Set up copied filtered network views with no unnamed performers
@@ -399,16 +406,20 @@ log(f'Grouped network data created (total of {len(networks.keys())} networks)', 
 
 import copy
 
+
 def drop_unnamed(n):
     return not "unnamed" in n.lower()
 
-log(f'Setting up filtered networks...')
+
+log(f"Setting up filtered networks...")
 
 _networks = {}
 
 for key in networks:
     _networks[key] = copy.deepcopy(networks[key])
-    _networks[f"{key}-no-unnamed-performers"] = nx.subgraph_view(_networks[key], filter_node=drop_unnamed)
+    _networks[f"{key}-no-unnamed-performers"] = nx.subgraph_view(
+        _networks[key], filter_node=drop_unnamed
+    )
     _networks[f"{key}-no-unnamed-performers"].generated = datetime.datetime.now()
 
 networks = _networks
@@ -417,17 +428,13 @@ if settings.get("save-unnamed-networks") == False:
     _networks = {}
 
     for key in networks:
-        if 'no-unnamed' in key:
+        if "no-unnamed" in key:
             _networks[key] = copy.deepcopy(networks[key])
 
     networks = _networks
-    log('Deleted networks with unnamed performers.')
-    
-log(f'Filtered networks set up.', padding_bottom=True)
-# -
+    log("Deleted networks with unnamed performers.")
 
-
-
+log(f"Filtered networks set up.", padding_bottom=True)
 
 
 # +
@@ -436,25 +443,25 @@ log(f'Filtered networks set up.', padding_bottom=True)
 for key in networks:
     for edge in list(networks[key].edges):
         networks[key].edges[edge]["weights"] = {}
-        for co_located, date_groups in (networks[key].edges[edge]["coLocated"].items()):
+        for co_located, date_groups in networks[key].edges[edge]["coLocated"].items():
             networks[key].edges[edge]["weights"]["dateGroups"] = len(date_groups)
-        networks[key].edges[edge]["weights"]["venues"] = len(networks[key].edges[edge]["coLocated"])
-        
-log(f'Added weights attributes for all networks\' edges.', padding_bottom=True)
-# -
+        networks[key].edges[edge]["weights"]["venues"] = len(
+            networks[key].edges[edge]["coLocated"]
+        )
 
-
-
+log(f"Added weights attributes for all networks' edges.", padding_bottom=True)
 
 
 # +
 # Generating metadata for connected nodes in each network
 
+
 def get_unique_networks(connected_nodes_per_node):
     def get_connected_nodes_per_node(G):
-        return {node: sorted(nx.bfs_tree(G, node, reverse=False).nodes) for node in G.nodes}
+        return {
+            node: sorted(nx.bfs_tree(G, node, reverse=False).nodes) for node in G.nodes
+        }
 
-    
     if isinstance(connected_nodes_per_node, dict):
         pass
     elif isinstance(connected_nodes_per_node, nx.classes.graph.Graph):
@@ -473,11 +480,11 @@ def get_unique_networks(connected_nodes_per_node):
     return unique_networks
 
 
-log(f'Adding unique connected nodes for each network...')
+log(f"Adding unique connected nodes for each network...")
 t = Timer()
 
 for key in networks:
-    log(f'    {key}...')
+    log(f"    {key}...")
     unique_networks = get_unique_networks(networks[key])
 
     for network_id, unique_network in enumerate(unique_networks, start=1):
@@ -489,15 +496,12 @@ for key in networks:
                 }
             }
 
-log(f'Done. ({t.now}s)', padding_bottom=True)
-# -
-
-
-
+log(f"Done. ({t.now}s)", padding_bottom=True)
 
 
 # +
 # Generate community algorithm data
+
 
 def merge_community_dicts(*args):
     _ = {}
@@ -520,11 +524,11 @@ def merge_community_dicts(*args):
     return _
 
 
-log(f'Generating community data for each network...')
+log(f"Generating community data for each network...")
 t = Timer()
 
 for key in networks:
-    log(f'    {key}...')
+    log(f"    {key}...")
 
     louvain = community_louvain.best_partition(networks[key])
     louvain = {
@@ -542,7 +546,7 @@ for key in networks:
     community_dicts = merge_community_dicts(louvain, clauset_newman_moore)
 
     nx.set_node_attributes(networks[key], community_dicts)
-    
+
     for performer in networks[key].nodes:
         networks[key].nodes[performer]["centralities"] = {}
 
@@ -570,15 +574,12 @@ for key in networks:
             "closeness_centrality_100x"
         ] = round(degree * 100, 6)
 
-log(f'Done. ({t.now}s)', padding_bottom=True)
-# -
-
-
-
+log(f"Done. ({t.now}s)", padding_bottom=True)
 
 
 # +
 # Generate degree information
+
 
 def get_degrees(G, node):
     indegree = sum([1 for edge in G.edges if edge[0] == node])
@@ -588,29 +589,26 @@ def get_degrees(G, node):
     return {"indegree": indegree, "outdegree": outdegree, "degree": degree}
 
 
-log(f'Generating degree inforation for each network...')
+log(f"Generating degree inforation for each network...")
 t = Timer()
 
 for key in networks:
-    log(f'    {key}...')
-    
+    log(f"    {key}...")
+
     degrees = {
         node: {"degrees": get_degrees(networks[key], node)}
         for node in networks[key].nodes
     }
     nx.set_node_attributes(networks[key], degrees)
-    
-log(f'Done. ({t.now}s)', padding_bottom=True)
-# -
 
-
-
+log(f"Done. ({t.now}s)", padding_bottom=True)
 
 
 # +
 # Generate other meta information necessary for visualization
 
 import unicodedata
+
 
 def slugify(value, allow_unicode=False, verbose=False):
     init_value = str(value)
@@ -627,12 +625,12 @@ def slugify(value, allow_unicode=False, verbose=False):
     return value
 
 
-log(f'Finalizing meta data for each network...')
+log(f"Finalizing meta data for each network...")
 t = Timer()
 
 for key in networks:
-    log(f'    {key}...')
-    
+    log(f"    {key}...")
+
     for node in networks[key].nodes:
         networks[key].nodes[node]["node_id"] = slugify(node)
         networks[key].nodes[node]["category"] = "performer"
@@ -657,12 +655,8 @@ for key in networks:
         }
 
     networks[key].finished = datetime.datetime.now()
-    
-log(f'Done. ({t.now}s)', padding_bottom=True)
-# -
 
-
-
+log(f"Done. ({t.now}s)", padding_bottom=True)
 
 
 # +
@@ -678,46 +672,42 @@ for key in networks:
         "totalInSeconds": diff.seconds,
     }
     data["days"] = re.findall(r"\d+", key)[0]
-    
-    fp = save_result(file_name, data, f'network/live')
+
+    fp = save_result(file_name, data, f"network/live")
 
     # Add written filepath to `files_written`
     files_written.append(str(fp.absolute()))
 
-log('Network data files written.', padding_bottom=True)
-# -
-
-
-
+log("Network data files written.", padding_bottom=True)
 
 
 # +
-log(f'Generating ego network for each node in the 14-day separated dataset...')
+log(f"Generating ego network for each node in the 14-day separated dataset...")
 t = Timer()
 
-ego_networks = {node: nx.ego.ego_graph(networks['grouped-by-14-days-no-unnamed-performers'], node, 1) for node in networks['grouped-by-14-days-no-unnamed-performers'].nodes()}
-ego_networks = {k: nx.node_link_data(v)['links'] for k, v in ego_networks.items()}
+ego_networks = {
+    node: nx.ego.ego_graph(
+        networks["grouped-by-14-days-no-unnamed-performers"], node, 1
+    )
+    for node in networks["grouped-by-14-days-no-unnamed-performers"].nodes()
+}
+ego_networks = {k: nx.node_link_data(v)["links"] for k, v in ego_networks.items()}
 
-log(f'Done. ({t.now}s)', padding_bottom=True)
+log(f"Done. ({t.now}s)", padding_bottom=True)
 
 # +
-fp = save_result('ego-networks-14-days-no-unnamed', ego_networks, 'network/live')
+fp = save_result("ego-networks-14-days-no-unnamed", ego_networks, "network/live")
 
 # Add written filepath to `files_written`
 files_written.append(str(fp.absolute()))
 
-log(f'Saved ego network datafile.')
+log(f"Saved ego network datafile.")
 # -
 
 
-
-
-
-log('*************', padding_y=True)
-log(f'Seconds to execute: {T.now}', padding_bottom=True)
-log('Files written:', padding_bottom=True)
+log("*************", padding_y=True)
+log(f"Seconds to execute: {T.now}", padding_bottom=True)
+log("Files written:", padding_bottom=True)
 for file in files_written:
-    log('- ' + file)
-log('*************', padding_y=True)
-
-
+    log("- " + file)
+log("*************", padding_y=True)
