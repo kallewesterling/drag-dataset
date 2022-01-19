@@ -87,11 +87,23 @@ def save_result(cat, result, kind, pretty=False, my_pretty=True):
 
     _data = json.loads(json_str)
     if my_pretty:
-        json_str = (
-            "[\n  "
-            + ",\n  ".join([json.dumps(p, separators=(",", ":")) for p in _data])
-            + "\n]"
-        )
+        try:
+            json_str = (
+                "[\n  "
+                + ",\n  ".join(
+                    [
+                        json.dumps({k: v}, separators=(",", ":"))
+                        for k, v in _data.items()
+                    ]
+                )
+                + "\n]"
+            )
+        except AttributeError:
+            json_str = (
+                "[\n  "
+                + ",\n  ".join([json.dumps(p, separators=(",", ":")) for p in _data])
+                + "\n]"
+            )
     elif pretty:
         json_str = json.dumps(result, sort_keys=True, indent=2)
     else:
