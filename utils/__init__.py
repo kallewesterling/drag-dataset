@@ -69,7 +69,7 @@ if debug:
     log("#########################################", padding_y=True)
 
 
-def save_result(cat, result, kind, pretty=False, my_pretty=True):
+def save_result(cat, result, kind, pretty=False):
     '''kind = "values" / "pairing"'''
 
     def fix_cat(cat):
@@ -86,26 +86,8 @@ def save_result(cat, result, kind, pretty=False, my_pretty=True):
         json_str = result
 
     _data = json.loads(json_str)
-    if my_pretty:
-        try:
-            json_str = (
-                "[\n  "
-                + ",\n  ".join(
-                    [
-                        json.dumps({k: v}, separators=(",", ":"))
-                        for k, v in _data.items()
-                    ]
-                )
-                + "\n]"
-            )
-        except AttributeError:
-            json_str = (
-                "[\n  "
-                + ",\n  ".join([json.dumps(p, separators=(",", ":")) for p in _data])
-                + "\n]"
-            )
-    elif pretty:
-        json_str = json.dumps(result, sort_keys=True, indent=2)
+    if pretty:
+        json_str = json.dumps(_data, sort_keys=True, indent=2)
     else:
         json_str = json.dumps(_data, separators=(",", ":"))
 
