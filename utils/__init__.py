@@ -69,7 +69,7 @@ if debug:
     log("#########################################", padding_y=True)
 
 
-def save_result(cat, result, kind):
+def save_result(cat, result, kind, pretty=False):
     '''kind = "values" / "pairing"'''
 
     def fix_cat(cat):
@@ -81,7 +81,10 @@ def save_result(cat, result, kind):
     cat = fix_cat(cat)
 
     if type(result) == dict:
-        json_str = json.dumps(result)
+        if pretty:
+            json_str = json.dumps(result, sort_keys=True, indent=2)
+        else:
+            json_str = json.dumps(result)
     else:
         json_str = result
 
