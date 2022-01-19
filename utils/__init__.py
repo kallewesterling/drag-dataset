@@ -69,7 +69,7 @@ if debug:
     log("#########################################", padding_y=True)
 
 
-def save_result(cat, result, kind, pretty=False):
+def save_result(cat, result, kind, pretty=False, my_pretty=True):
     '''kind = "values" / "pairing"'''
 
     def fix_cat(cat):
@@ -81,12 +81,21 @@ def save_result(cat, result, kind, pretty=False):
     cat = fix_cat(cat)
 
     if type(result) == dict:
-        if pretty:
-            json_str = json.dumps(result, sort_keys=True, indent=2)
-        else:
-            json_str = json.dumps(result)
+        json_str = json.dumps(result)
     else:
         json_str = result
+
+    _data = json.loads(json_str)
+    if my_pretty:
+        json_str = (
+            "[\n  "
+            + ",\n  ".join([json.dumps(p, separators=(",", ":")) for p in _data])
+            + "\n]"
+        )
+    elif pretty:
+        json_str = json.dumps(result, sort_keys=True, indent=2)
+    else:
+        json_str = json.dumps(_data, separators=(",", ":"))
 
     # Replace wonky characters (TODO: Fix this more elegantly)
     for search, replace in replace_scheme.items():
